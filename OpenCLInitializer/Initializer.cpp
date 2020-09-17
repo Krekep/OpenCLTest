@@ -24,7 +24,7 @@ cl::Program CreateProgram(const std::string& file)
 
 	auto err = program.build("-cl-std=CL1.2");
 	if (err == CL_SUCCESS) 
-		printf("\n Success build \n");
+		printf("Success build \n");
 	return program;
 }
 

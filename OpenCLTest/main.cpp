@@ -10,8 +10,8 @@ using namespace std;
 int main()
 {
 	int n, m, k;
-	string inFile;
-	/*cout << "Enter file name with data\n";
+	/*string inFile;
+	cout << "Enter file name with data\n";
 	cin >> inFile;*/
 	ifstream in("file.in");
 	in >> m;
@@ -41,26 +41,10 @@ int main()
 		for (int j = 0; j < n; j++)
 			rMatr[i * n + j] = false;
 
-
-	std::vector<cl::Platform> platforms;
-	cl::Platform::get(&platforms);
-
-	auto platform = platforms.front();
-	std::vector<cl::Device> devices;
-	platform.getDevices(CL_DEVICE_TYPE_GPU, &devices);
-
+	auto program = CreateProgram("MatrixMultiplication.cl");
+	auto context = program.getInfo<CL_PROGRAM_CONTEXT>();
+	auto devices = program.getInfo<CL_PROGRAM_DEVICES>();
 	auto device = devices.front();
-
-	std::ifstream kernelFile("MatrixMultiplication.cl");
-	std::string src(std::istreambuf_iterator<char>(kernelFile), (std::istreambuf_iterator<char>()));
-	cl::Program::Sources sources(1, std::make_pair(src.c_str(), src.length() + 1));
-
-	cl::Context context(device);
-	cl::Program program(context, sources);
-
-	auto err = program.build("-cl-std=CL1.2");
-	if (err == CL_SUCCESS)
-		printf("\n Success build \n");
 
 
 	cl::Buffer inputFirstBuf(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(bool) * m * k, aMatr);
@@ -87,7 +71,46 @@ int main()
 				cout << "0 ";
 	cout << "--------------\n";
 
-	cin.get();
+	bool continueCalc = true;
+	bool* temp = (bool*)malloc(sizeof(bool) * m * k);
+	bool* result = (bool*)malloc(sizeof(bool) * m * k);
+	for (int i = 0; i < m; i++)
+		for (int j = 0; j < k; j++)
+		{
+			temp[i * k + j] = aMatr[i * k + j];
+			result[i * k + j] = aMatr[i * k + j];
+		}
 
+	while (continueCalc)
+	{
+		continueCalc = false;
+
+		cl::Buffer inputTempBuf(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(bool) * m * k, temp);
+		kernel.setArg(0, m);
+		kernel.setArg(1, m);
+		kernel.setArg(2, m);
+		kernel.setArg(3, inputFirstBuf);
+		kernel.setArg(4, inputTempBuf);
+		kernel.setArg(5, outputBuf);
+		queue.enqueueNDRangeKernel(kernel, 0, cl::NDRange(m, n));
+		queue.enqueueReadBuffer(outputBuf, CL_TRUE, 0, sizeof(bool) * m * n, temp, 0, NULL);
+
+		for (int i = 0; i < m; i++)
+			for (int j = 0; j < k; j++)
+			{
+				if (!result[i * k + j] && temp[i * k + j])
+				{
+					result[i * k + j] = true;
+					continueCalc = true;
+				}
+			}
+		
+	}
+	cout << "Result of transitive closure\n";
+	for (int i = 0; i < m; i++, cout << endl)
+		for (int j = 0; j < k; j++)
+			cout << result[i * k + j] << " ";
+	cout << "--------------\n";
+	cin.get();
 	return 0;
 }
