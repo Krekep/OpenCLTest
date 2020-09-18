@@ -3,6 +3,7 @@
 #include <CL\cl.hpp>
 #include <fstream>
 #include <iostream>
+using namespace std;
 
 cl::Program CreateProgram(const std::string& file)
 {
@@ -23,6 +24,10 @@ cl::Program CreateProgram(const std::string& file)
 	cl::Program program(context, sources);
 
 	auto err = program.build("-cl-std=CL1.2");
+	if (err == CL_BUILD_PROGRAM_FAILURE) {
+		string log = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0]);
+		cerr << log << endl;
+	}
 	if (err == CL_SUCCESS) 
 		printf("Success build \n");
 	return program;

@@ -11,3 +11,13 @@ kernel void MatrixMultiplication(const int M, const int N, const int K,
    }
    C[iteratorM + iteratorN * M] = acc;
 }
+
+
+
+kernel void MatrixAddition(const int len,
+		 const global bool* A, const global bool* B, global bool* C) 
+{  
+   int iteratorM = get_global_id(0);
+
+   C[iteratorM] = (B[iteratorM] || A[iteratorM]);
+}
